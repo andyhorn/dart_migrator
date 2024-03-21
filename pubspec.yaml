@@ -1,6 +1,7 @@
 name: migrator
 description: A postgres migration runner for your Dart projects.
 version: 0.1.0
+repository: https://github.com/andyhorn/dart_migrator
 
 environment:
   sdk: ^3.3.0
