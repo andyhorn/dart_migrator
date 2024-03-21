@@ -1,4 +1,4 @@
-import 'package:migrator/src/commands/commands.dart';
+import 'package:dart_migrator/src/commands/commands.dart';
 import 'package:postgres/postgres.dart';
 
 final class InsertMigrationNameCommand extends SqlCommand {

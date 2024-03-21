@@ -1,3 +1,3 @@
 library migrator;
 
-export 'package:migrator/src/migration_runner.dart';
+export 'package:dart_migrator/src/migration_runner.dart';

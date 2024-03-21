@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:collection/collection.dart';
-import 'package:migrator/migrator.dart';
+import 'package:dart_migrator/src/migration_runner.dart';
 import 'package:postgres/postgres.dart';
 import 'package:yaml/yaml.dart';
 

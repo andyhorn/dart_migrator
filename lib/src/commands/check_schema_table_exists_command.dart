@@ -1,4 +1,4 @@
-import 'package:migrator/src/commands/sql_command.dart';
+import 'package:dart_migrator/src/commands/sql_command.dart';
 import 'package:postgres/postgres.dart';
 
 final class CheckSchemaTableExistsCommand extends SqlCommand {

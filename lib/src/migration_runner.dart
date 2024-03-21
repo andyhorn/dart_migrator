@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:collection/collection.dart';
-import 'package:migrator/src/commands/commands.dart';
-import 'package:migrator/src/sql_executor.dart';
+import 'package:dart_migrator/src/commands/commands.dart';
+import 'package:dart_migrator/src/sql_executor.dart';
 import 'package:postgres/postgres.dart';
 
 class MigrationRunner {
