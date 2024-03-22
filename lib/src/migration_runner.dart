@@ -77,7 +77,6 @@ class MigrationRunner {
     return await _connection.runTx((session) async {
       final executor = SqlExecutor.fromSession(session);
       final commands = [
-        const CheckSchemaTableExistsCommand(_schemaTableName),
         const CreateSchemaTableCommand(),
         const CreateUpdatedAtProcedureCommand(),
         const EnableUuidExtensionCommand(),
