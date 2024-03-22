@@ -145,7 +145,7 @@ class MigrationRunner {
   Future<void> _verifyUpdatedAtTimestamps(TxSession session) async {
     final executor = SqlExecutor.fromSession(session);
     final tables = await executor.execute(
-      const GetPublicTablesCommand(_schemaTableName),
+      GetPublicTablesCommand(omit: [_schemaTableName]),
     );
 
     for (final table in tables) {
