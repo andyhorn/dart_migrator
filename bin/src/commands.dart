@@ -111,7 +111,11 @@ class MigrateCommand extends Command {
       ),
     );
 
-    final migrator = MigrationRunner(connection);
+    final migrator = MigrationRunner(
+      connection: connection,
+      verbose: argResults?['verbose'] == true,
+    );
+
     await migrator.run();
   }
 
