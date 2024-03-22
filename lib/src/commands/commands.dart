@@ -4,7 +4,7 @@ export 'package:dart_migrator/src/commands/create_updated_at_procedure_command.d
 export 'package:dart_migrator/src/commands/create_updated_at_trigger_command.dart';
 export 'package:dart_migrator/src/commands/custom_command.dart';
 export 'package:dart_migrator/src/commands/enable_uuid_extension_command.dart';
-export 'package:dart_migrator/src/commands/get_latest_schema_id_command.dart';
+export 'package:dart_migrator/src/commands/get_latest_migration_name_command.dart';
 export 'package:dart_migrator/src/commands/get_public_tables_command.dart';
 export 'package:dart_migrator/src/commands/get_table_columns_command.dart';
 export 'package:dart_migrator/src/commands/insert_migration_name_command.dart';
