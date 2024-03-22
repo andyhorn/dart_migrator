@@ -27,7 +27,7 @@ class MigrationRunner {
 
     if (migrationFiles.isEmpty) {
       print('No migrations found');
-      return;
+      exit(0);
     }
 
     final latestMigrationName = await _getLatestMigrationName();
@@ -36,7 +36,7 @@ class MigrationRunner {
 
     if (upToDate) {
       print('Database up-to-date');
-      return;
+      exit(0);
     }
 
     final migrationsToRun = _getMigrationsToRun(
