@@ -6,8 +6,14 @@ import 'package:dart_migrator/src/sql_executor.dart';
 import 'package:postgres/postgres.dart';
 
 class MigrationRunner {
+  const MigrationRunner({
+    required Connection connection,
+    required bool verbose,
+  })  : _connection = connection,
+        _verbose = verbose;
+
   final Connection _connection;
-  const MigrationRunner(this._connection);
+  final bool _verbose;
 
   static const _schemaTableName = '__schema';
 
@@ -15,12 +21,16 @@ class MigrationRunner {
     final schemaTableExists = await _getSchemaTableExists();
 
     if (!schemaTableExists) {
+      _log('Schema table does not exist');
+
       final initialized = await _init();
 
       if (!initialized) {
         print('Failed to initialize database');
         exit(2);
       }
+
+      _log('Database initialized!');
     }
 
     final migrationFiles = _getMigrationFiles();
@@ -31,8 +41,8 @@ class MigrationRunner {
     }
 
     final latestMigrationName = await _getLatestMigrationName();
-    final upToDate =
-        _getMigrationName(migrationFiles.last) == latestMigrationName;
+    final latestMigrationFileName = _getMigrationName(migrationFiles.last);
+    final upToDate = latestMigrationName == latestMigrationFileName;
 
     if (upToDate) {
       print('Database up-to-date');
@@ -44,7 +54,7 @@ class MigrationRunner {
       migrationFiles: migrationFiles,
     );
 
-    print('Found ${migrationsToRun.length} migration(s) to run');
+    _log('Found ${migrationsToRun.length} migration(s) to run');
 
     await _connection.runTx((session) async {
       for (final migration in migrationsToRun) {
@@ -60,6 +70,10 @@ class MigrationRunner {
   }
 
   Future<bool> _init() async {
+    if (_verbose) {
+      print('Initializing database...');
+    }
+
     return await _connection.runTx((session) async {
       final executor = SqlExecutor.fromSession(session);
       final commands = [
@@ -78,6 +92,8 @@ class MigrationRunner {
   }
 
   Future<bool> _getSchemaTableExists() async {
+    _log('Checking for schema table...');
+
     final executor = SqlExecutor.fromConnection(_connection);
     final result = await executor.execute(
       const CheckSchemaTableExistsCommand(_schemaTableName),
@@ -88,9 +104,15 @@ class MigrationRunner {
 
   List<File> _getMigrationFiles() {
     final migrationsDir = Directory('${Directory.current.path}/migrations');
-    final migrationFiles = <File>[];
 
+    if (!migrationsDir.existsSync()) {
+      _log('Migrations directory does not exist; exiting');
+      exit(2);
+    }
+
+    final migrationFiles = <File>[];
     final migrations = migrationsDir.listSync().whereType<Directory>();
+
     for (final migration in migrations) {
       final files = migration.listSync().whereType<File>();
       final up = files.firstWhereOrNull(
@@ -102,6 +124,7 @@ class MigrationRunner {
       }
     }
 
+    _log('Found ${migrationFiles.length} migration file(s)');
     return migrationFiles;
   }
 
@@ -133,9 +156,13 @@ class MigrationRunner {
     final statements = _getMigrationStatements(contents);
     final executor = SqlExecutor.fromSession(session);
 
+    _log('Found ${statements.length} statements in ${_getMigrationName(file)}');
+
     for (final statement in statements) {
       await executor.execute(CustomCommand(statement));
     }
+
+    _log('Migration complete; inserting migration name into schema table');
 
     await executor.execute(
       InsertMigrationNameCommand(_getMigrationName(file)),
@@ -147,6 +174,8 @@ class MigrationRunner {
     final tables = await executor.execute(
       GetPublicTablesCommand(omit: [_schemaTableName]),
     );
+
+    _log('Found ${tables.length} table(s)');
 
     for (final table in tables) {
       final tableName = _getTableName(table);
@@ -185,5 +214,11 @@ class MigrationRunner {
 
   static bool _containsUpdatedAt(Result columns) {
     return columns.any((column) => column.firstOrNull == 'updated_at');
+  }
+
+  void _log(String message) {
+    if (_verbose) {
+      print(message);
+    }
   }
 }
