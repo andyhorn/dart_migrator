@@ -1,8 +1,8 @@
 import 'package:dart_migrator/src/commands/commands.dart';
 import 'package:postgres/postgres.dart';
 
-final class GetLatestSchemaIdCommand extends SqlCommand {
-  const GetLatestSchemaIdCommand(this._schemaTableName);
+final class GetLatestMigrationNameCommand extends SqlCommand {
+  const GetLatestMigrationNameCommand(this._schemaTableName);
   final String _schemaTableName;
 
   @override
@@ -10,6 +10,6 @@ final class GetLatestSchemaIdCommand extends SqlCommand {
 
   @override
   Sql get sql => Sql(
-        'SELECT id FROM $_schemaTableName ORDER BY id DESC LIMIT 1',
+        'SELECT name FROM $_schemaTableName ORDER BY id DESC LIMIT 1',
       );
 }

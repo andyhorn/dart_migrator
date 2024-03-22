@@ -12,27 +12,78 @@ class MigrationRunner {
   static const _schemaTableName = '__schema';
 
   Future<void> run() async {
-    await _ensureSchemaExists();
+    final schemaTableExists = await _getSchemaTableExists();
 
-    final migrations = _getMigrationFiles();
-    final latestSchema = await _latestSchema();
+    if (!schemaTableExists) {
+      final initialized = await _init();
 
-    if (latestSchema == migrations.length) {
+      if (!initialized) {
+        print('Failed to initialize database');
+        exit(2);
+      }
+    }
+
+    final migrationFiles = _getMigrationFiles();
+
+    if (migrationFiles.isEmpty) {
+      print('No migrations found');
+      return;
+    }
+
+    final latestMigrationName = await _getLatestMigrationName();
+    final upToDate =
+        _getMigrationName(migrationFiles.last) == latestMigrationName;
+
+    if (upToDate) {
       print('Database up-to-date');
       return;
     }
 
+    final migrationsToRun = _getMigrationsToRun(
+      latestMigrationName: latestMigrationName,
+      migrationFiles: migrationFiles,
+    );
+
+    print('Found ${migrationsToRun.length} migration(s) to run');
+
     await _connection.runTx((session) async {
-      for (var i = latestSchema; i < migrations.length; i++) {
-        final file = migrations[i];
-        print('Running migration ${_getMigrationName(file)}');
-        await _runMigration(file, session);
+      for (final migration in migrationsToRun) {
+        print('Running migration ${_getMigrationName(migration)}');
+        await _runMigration(migration, session);
       }
 
       await _verifyUpdatedAtTimestamps(session);
     });
 
     print('Migration(s) complete');
+    exit(0);
+  }
+
+  Future<bool> _init() async {
+    return await _connection.runTx((session) async {
+      final executor = SqlExecutor.fromSession(session);
+      final commands = [
+        const CheckSchemaTableExistsCommand(_schemaTableName),
+        const CreateSchemaTableCommand(),
+        const CreateUpdatedAtProcedureCommand(),
+        const EnableUuidExtensionCommand(),
+      ];
+
+      for (final command in commands) {
+        await executor.execute(command);
+      }
+
+      return true;
+    });
+  }
+
+  Future<bool> _getSchemaTableExists() async {
+    final executor = SqlExecutor.fromConnection(_connection);
+    final result = await executor.execute(
+      const CheckSchemaTableExistsCommand(_schemaTableName),
+    );
+
+    return _getExistsResult(result);
   }
 
   List<File> _getMigrationFiles() {
@@ -54,41 +105,27 @@ class MigrationRunner {
     return migrationFiles;
   }
 
-  Future<void> _ensureSchemaExists() async {
-    final schemaExistsResult = await _schemaExists();
-
-    if (!schemaExistsResult) {
-      await _connection.runTx((session) async {
-        final executor = SqlExecutor.fromSession(session);
-        final commands = [
-          const CheckSchemaTableExistsCommand(_schemaTableName),
-          const CreateSchemaTableCommand(),
-          const CreateUpdatedAtProcedureCommand(),
-          const EnableUuidExtensionCommand(),
-        ];
-
-        for (final command in commands) {
-          await executor.execute(command);
-        }
-      });
-    }
-  }
-
-  Future<bool> _schemaExists() async {
-    final executor = SqlExecutor.fromConnection(_connection);
-    final result = await executor.execute(
-      const CheckSchemaTableExistsCommand(_schemaTableName),
-    );
-
-    return _getExistsResult(result);
-  }
-
-  Future<int> _latestSchema() async {
+  Future<String?> _getLatestMigrationName() async {
     final result = await SqlExecutor.fromConnection(_connection).execute(
-      const GetLatestSchemaIdCommand(_schemaTableName),
+      const GetLatestMigrationNameCommand(_schemaTableName),
     );
 
-    return _getLatestSchemaId(result);
+    return result.isEmpty
+        ? null
+        : result.first.toColumnMap()['name'] as String?;
+  }
+
+  List<File> _getMigrationsToRun({
+    required String? latestMigrationName,
+    required List<File> migrationFiles,
+  }) {
+    final lastMigrationIndex = migrationFiles.indexWhere(
+      (file) => _getMigrationName(file) == latestMigrationName,
+    );
+
+    return lastMigrationIndex == -1
+        ? migrationFiles
+        : migrationFiles.sublist(lastMigrationIndex + 1);
   }
 
   Future<void> _runMigration(File file, TxSession session) async {
@@ -126,10 +163,6 @@ class MigrationRunner {
 
   static bool _getExistsResult(Result result) {
     return result.isNotEmpty && result.first.toColumnMap()['exists'] as bool;
-  }
-
-  static int _getLatestSchemaId(Result result) {
-    return result.isEmpty ? 0 : result.first.toColumnMap()['id'] as int;
   }
 
   static List<String> _getMigrationStatements(List<String> contents) {
