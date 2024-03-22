@@ -116,8 +116,8 @@ class MigrateCommand extends Command {
   }
 
   ConnectionStringSource _getConnectionStringSource() {
-    final useUrl = argResults!.command!.wasParsed('url');
-    final useEnv = argResults!.command!.wasParsed('env');
+    final useUrl = argResults!.arguments.contains('--url');
+    final useEnv = argResults!.arguments.contains('--env');
 
     if (useUrl && useEnv) {
       throw UsageException('You cannot use both --url and --env', usage);
