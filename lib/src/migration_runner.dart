@@ -102,7 +102,7 @@ class MigrationRunner {
   }
 
   List<File> _getMigrationFiles() {
-    final migrationsDir = Directory('${Directory.current.path}/migrations');
+    final migrationsDir = Directory('migrations');
 
     if (!migrationsDir.existsSync()) {
       _log('Migrations directory does not exist; exiting');
