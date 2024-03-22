@@ -12,7 +12,7 @@ final class GetPublicTablesCommand extends SqlCommand {
       return {
         'tableNames': TypedValue(
           Type.text,
-          omit!.join(','),
+          omit!.map((name) => "'$name'").join(','),
         ),
       };
     }
